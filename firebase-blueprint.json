@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "mentor"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Homework or assignment task",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "deadline": { "type": "string", "format": "date-time" },
+        "completed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "subject", "deadline", "completed"]
+    },
+    "CheckIn": {
+      "title": "CheckIn",
+      "description": "Emotional well-being check-in",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mood": { "type": "string", "enum": ["Happy", "Neutral", "Sad", "Anxious"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mood", "timestamp"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Message in a chat group",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isAnonymous": { "boolean": "boolean" }
+      },
+      "required": ["groupId", "senderId", "content", "timestamp"]
+    },
+    "ChatGroup": {
+      "title": "ChatGroup",
+      "description": "Peer support or moderated group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Homework tasks"
+    },
+    "checkins/{checkinId}": {
+      "schema": "CheckIn",
+      "description": "Emotional check-ins"
+    },
+    "chatGroups/{groupId}": {
+      "schema": "ChatGroup",
+      "description": "Chat groups"
+    },
+    "chatGroups/{groupId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages within a group"
+    }
+  }
+}

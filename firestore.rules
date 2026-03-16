@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['student', 'mentor'];
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['userId', 'title', 'subject', 'deadline', 'completed']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.subject is string &&
+             data.completed is bool;
+    }
+
+    function isValidCheckIn(data) {
+      return data.keys().hasAll(['userId', 'mood', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.mood in ['Happy', 'Neutral', 'Sad', 'Anxious'];
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['groupId', 'senderId', 'content', 'timestamp']) &&
+             data.senderId == request.auth.uid &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000;
+    }
+
+    // Rules
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+    
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidTask(request.resource.data);
+      allow update: if isDocOwner() && isValidTask(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+    
+    match /checkins/{checkinId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidCheckIn(request.resource.data);
+    }
+    
+    match /chatGroups/{groupId} {
+      allow read: if isAuthenticated();
+      // Only mentors or admins should create groups in a real app, but for now allow authenticated
+      allow create: if isAuthenticated();
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+      }
+    }
+  }
+}
