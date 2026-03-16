@@ -23,17 +23,27 @@ service cloud.firestore {
     }
 
     function isValidTask(data) {
-      return data.keys().hasAll(['userId', 'title', 'subject', 'deadline', 'completed']) &&
+      return data.keys().hasAll(['userId', 'title', 'subject', 'deadline', 'completed', 'type']) &&
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.subject is string &&
-             data.completed is bool;
+             data.completed is bool &&
+             data.type in ['assignment', 'classwork'] &&
+             (!('description' in data) || (data.description is string && data.description.size() < 2000));
     }
 
     function isValidCheckIn(data) {
       return data.keys().hasAll(['userId', 'mood', 'timestamp']) &&
              data.userId == request.auth.uid &&
-             data.mood in ['Happy', 'Neutral', 'Sad', 'Anxious'];
+             data.mood in ['Happy', 'Neutral', 'Sad', 'Anxious'] &&
+             data.timestamp is string;
+    }
+
+    function isValidAiChat(data) {
+      return data.keys().hasAll(['userId', 'question', 'answer', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.question is string && data.question.size() > 0 && data.question.size() < 1000 &&
+             data.answer is string && data.answer.size() > 0 && data.answer.size() < 5000;
     }
 
     function isValidMessage(data) {
@@ -57,8 +67,13 @@ service cloud.firestore {
     }
     
     match /checkins/{checkinId} {
-      allow read: if isDocOwner();
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidCheckIn(request.resource.data);
+    }
+    
+    match /ai_chats/{chatId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidAiChat(request.resource.data);
     }
     
     match /chatGroups/{groupId} {

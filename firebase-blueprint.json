@@ -22,11 +22,13 @@
         "userId": { "type": "string" },
         "title": { "type": "string" },
         "subject": { "type": "string" },
+        "description": { "type": "string" },
         "deadline": { "type": "string", "format": "date-time" },
         "completed": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["assignment", "classwork"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "title", "subject", "deadline", "completed"]
+      "required": ["userId", "title", "subject", "deadline", "completed", "type"]
     },
     "CheckIn": {
       "title": "CheckIn",
@@ -38,6 +40,18 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "mood", "timestamp"]
+    },
+    "AiChatMessage": {
+      "title": "AiChatMessage",
+      "description": "History of AI tutor interactions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "question", "answer", "timestamp"]
     },
     "ChatMessage": {
       "title": "ChatMessage",
@@ -85,6 +99,10 @@
     "chatGroups/{groupId}/messages/{messageId}": {
       "schema": "ChatMessage",
       "description": "Messages within a group"
+    },
+    "ai_chats/{chatId}": {
+      "schema": "AiChatMessage",
+      "description": "AI tutor chat history"
     }
   }
 }
