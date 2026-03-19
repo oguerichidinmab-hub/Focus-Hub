@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Task, CheckIn, Mood, AiChatMessage } from '../types';
 import { getMotivationalTip, askAIAssistant, generateExamPrepSuggestions } from '../services/geminiService';
 import { Smile, Meh, Frown, AlertCircle, Calendar, CheckCircle2, ChevronRight, Sparkles, Music, BookOpen, GraduationCap, X, Send, Loader2, Search, Accessibility, Volume2, VolumeX, Timer } from 'lucide-react';
@@ -69,6 +69,8 @@ export default function Dashboard({ onPageChange, onTabChange }: DashboardProps)
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const taskList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
       setTasks(taskList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'tasks');
     });
 
     // Fetch all tasks for context
@@ -82,6 +84,8 @@ export default function Dashboard({ onPageChange, onTabChange }: DashboardProps)
     const unsubscribeAllTasks = onSnapshot(allTasksQuery, (snapshot) => {
       const taskList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
       setAllTasks(taskList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'tasks');
     });
 
     // Fetch latest tip
@@ -98,6 +102,8 @@ export default function Dashboard({ onPageChange, onTabChange }: DashboardProps)
     const unsubscribeAiChat = onSnapshot(aiChatQuery, (snapshot) => {
       const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiChatMessage));
       setAiChatHistory(history);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'ai_chats');
     });
 
     return () => {
@@ -117,7 +123,7 @@ export default function Dashboard({ onPageChange, onTabChange }: DashboardProps)
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error("Error saving mood:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'checkins');
     }
   };
 
@@ -134,12 +140,16 @@ export default function Dashboard({ onPageChange, onTabChange }: DashboardProps)
       setAiResponse(response);
       
       // Save to Firestore
-      await addDoc(collection(db, 'ai_chats'), {
-        userId: user.uid,
-        question: currentQuestion,
-        answer: response,
-        timestamp: new Date().toISOString()
-      });
+      try {
+        await addDoc(collection(db, 'ai_chats'), {
+          userId: user.uid,
+          question: currentQuestion,
+          answer: response,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'ai_chats');
+      }
     } catch (error) {
       setAiResponse("Sorry, I'm having trouble thinking right now. Try again?");
     } finally {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo, ReactNode } from 'react';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +12,64 @@ import Login from './pages/Login';
 import About from './pages/About';
 import InclusiveHub from './pages/InclusiveHub';
 import Layout from './components/Layout';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+
+// Error Boundary Component
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong. Please try refreshing the page.";
+      try {
+        // Check if it's a Firestore error JSON
+        const parsed = JSON.parse(this.state.error?.message || "");
+        if (parsed.error && parsed.operationType) {
+          errorMessage = `Database Error: ${parsed.error} (Operation: ${parsed.operationType})`;
+        }
+      } catch (e) {
+        // Not a JSON error, use the raw message if it's simple
+        if (this.state.error?.message && this.state.error.message.length < 100) {
+          errorMessage = this.state.error.message;
+        }
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <div className="max-w-md w-full bg-white rounded-[2.5rem] p-8 shadow-xl border border-rose-100 text-center">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Oops!</h2>
+            <p className="text-slate-600 mb-8 text-sm leading-relaxed">
+              {errorMessage}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={20} />
+              Refresh App
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 interface AuthContextType {
   user: User | null;
@@ -40,22 +98,27 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        } else {
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            displayName: user.displayName,
-            email: user.email,
-            photoURL: user.photoURL,
-            role: 'student',
-            createdAt: new Date().toISOString(),
-          };
-          await setDoc(docRef, newProfile);
-          setProfile(newProfile);
+        const path = `users/${user.uid}`;
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            setProfile(docSnap.data() as UserProfile);
+          } else {
+            const newProfile: UserProfile = {
+              uid: user.uid,
+              displayName: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              role: 'student',
+              createdAt: new Date().toISOString(),
+            };
+            await setDoc(docRef, newProfile);
+            setProfile(newProfile);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, path);
         }
       } else {
         setProfile(null);
@@ -72,14 +135,15 @@ export default function App() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, no need to show an error
         console.log('Login popup closed by user');
       } else if (error.code === 'auth/cancelled-popup-request') {
-        // Multiple popup requests, ignore
         console.log('Popup request cancelled');
+      } else if (error.code === 'auth/unauthorized-domain') {
+        console.error('Unauthorized domain:', window.location.hostname);
+        alert(`Login failed: This domain (${window.location.hostname}) is not authorized in your Firebase Console. Please add it to Authentication > Settings > Authorized domains.`);
       } else {
         console.error('Login error:', error);
-        alert('An error occurred during login. Please try again.');
+        alert(`Login error: ${error.message || 'An unknown error occurred'}`);
       }
     }
   };
@@ -99,9 +163,11 @@ export default function App() {
 
   if (!user) {
     return (
-      <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
-        <Login />
-      </AuthContext.Provider>
+      <ErrorBoundary>
+        <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
+          <Login />
+        </AuthContext.Provider>
+      </ErrorBoundary>
     );
   }
 
@@ -129,14 +195,16 @@ export default function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
-      <Layout 
-        activeTab={activeTab} 
-        onTabChange={(tab) => { setActiveTab(tab); setActivePage(null); }}
-        onPageChange={setActivePage}
-      >
-        {renderContent()}
-      </Layout>
-    </AuthContext.Provider>
+    <ErrorBoundary>
+      <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
+        <Layout 
+          activeTab={activeTab} 
+          onTabChange={(tab) => { setActiveTab(tab); setActivePage(null); }}
+          onPageChange={setActivePage}
+        >
+          {renderContent()}
+        </Layout>
+      </AuthContext.Provider>
+    </ErrorBoundary>
   );
 }

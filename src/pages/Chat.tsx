@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../App';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ChatMessage } from '../types';
 import { Send, User as UserIcon, Shield, Info } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -28,6 +28,8 @@ export default function Chat() {
       setTimeout(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'chatGroups/global/messages');
     });
 
     return () => unsubscribe();
@@ -48,7 +50,7 @@ export default function Chat() {
       });
       setNewMessage('');
     } catch (error) {
-      console.error("Error sending message:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'chatGroups/global/messages');
     }
   };
 

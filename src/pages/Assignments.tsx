@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Task } from '../types';
 import { Plus, CheckCircle2, Circle, Trash2, X, Calendar as CalendarIcon, BookOpen, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,6 +30,8 @@ export default function Assignments() {
     const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
       const taskList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
       setTasks(taskList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'tasks');
     });
 
     return () => unsubscribe();
@@ -53,7 +55,7 @@ export default function Assignments() {
       setNewTask({ title: '', subject: '', description: '', deadline: '', type: 'assignment' });
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error adding task:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'tasks');
     }
   };
 
@@ -68,7 +70,7 @@ export default function Assignments() {
         setSelectedTask({ ...selectedTask, completed: newCompleted });
       }
     } catch (error) {
-      console.error("Error updating task:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `tasks/${task.id}`);
     }
   };
 
@@ -79,7 +81,7 @@ export default function Assignments() {
         setIsDetailModalOpen(false);
       }
     } catch (error) {
-      console.error("Error deleting task:", error);
+      handleFirestoreError(error, OperationType.DELETE, `tasks/${id}`);
     }
   };
 
@@ -98,7 +100,7 @@ export default function Assignments() {
       setIsEditing(false);
       setSelectedTask({ ...selectedTask, ...editTask, deadline: new Date(editTask.deadline).toISOString() } as Task);
     } catch (error) {
-      console.error("Error updating task:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `tasks/${selectedTask.id}`);
     }
   };
 

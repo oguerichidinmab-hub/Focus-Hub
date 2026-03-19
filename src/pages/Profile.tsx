@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Task, CheckIn } from '../types';
 import { LogOut, Award, TrendingUp, Settings, ChevronRight, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -20,6 +20,8 @@ export default function Profile() {
       const allTasks = snapshot.docs.map(doc => doc.data() as Task);
       const completed = allTasks.filter(t => t.completed).length;
       setStats({ completed, pending: allTasks.length - completed });
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'tasks');
     });
 
     const checkinsQuery = query(
@@ -37,6 +39,8 @@ export default function Profile() {
         };
       }).reverse();
       setMoodHistory(history);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'checkins');
     });
 
     return () => {
