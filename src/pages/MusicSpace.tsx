@@ -10,7 +10,8 @@ import {
   Wind, 
   CloudRain, 
   Coffee,
-  Headphones
+  Headphones,
+  ChevronLeft
 } from 'lucide-react';
 
 interface Track {
@@ -21,7 +22,11 @@ interface Track {
   color: string;
 }
 
-export default function MusicSpace() {
+interface MusicSpaceProps {
+  onBack: () => void;
+}
+
+export default function MusicSpace({ onBack }: MusicSpaceProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [ambientVolume, setAmbientVolume] = useState(50);
@@ -43,10 +48,18 @@ export default function MusicSpace() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto pb-20"
+      className="max-w-2xl mx-auto pb-20 px-4"
       role="main"
       aria-label="Music Relaxation Space"
     >
+      <button 
+        onClick={onBack}
+        className="flex items-center gap-2 text-slate-500 font-medium mb-8 hover:text-indigo-600 transition-colors pt-4"
+      >
+        <ChevronLeft size={20} />
+        Back
+      </button>
+
       <header className="mb-8">
         <div className="flex items-center gap-4 mb-2">
           <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl" aria-hidden="true">

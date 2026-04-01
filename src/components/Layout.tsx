@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, BookOpen, MessageCircle, Users, User, Menu, X, LogOut, Info, ShieldCheck, Mail, FileText, Accessibility, Music } from 'lucide-react';
+import { Home, Calendar, Timer, Users, Heart, User, Menu, X, LogOut, Info, ShieldCheck, Mail, FileText, Accessibility, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -13,18 +13,16 @@ interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  onPageChange: (page: string) => void;
 }
 
-export default function Layout({ children, activeTab, onTabChange, onPageChange }: LayoutProps) {
+export default function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const { logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'study', label: 'Tasks', icon: BookOpen },
-    { id: 'chatroom', label: 'Chatroom', icon: MessageCircle },
-    { id: 'mentoring', label: 'Mentoring', icon: Users },
+    { id: 'planner', label: 'Planner', icon: Calendar },
+    { id: 'community', label: 'Community', icon: Users },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
@@ -38,7 +36,7 @@ export default function Layout({ children, activeTab, onTabChange, onPageChange 
   ];
 
   const handleMenuClick = (id: string) => {
-    onPageChange(id);
+    onTabChange(id);
     setIsMenuOpen(false);
   };
 

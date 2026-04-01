@@ -2,7 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // ===============================================================
     // Helper Functions
+    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -29,44 +31,41 @@ service cloud.firestore {
       return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
     }
 
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'email', 'role']) &&
-             data.uid is string &&
+      return data.uid is string &&
              data.email is string &&
-             data.role in ['student', 'mentor'];
+             (!('nickname' in data) || (data.nickname is string && data.nickname.size() < 50)) &&
+             (!('grade' in data) || (data.grade is string && data.grade.size() < 20));
     }
 
     function isValidTask(data) {
-      return data.keys().hasAll(['userId', 'title', 'subject', 'deadline', 'completed', 'type']) &&
-             data.userId == request.auth.uid &&
+      return data.userId == request.auth.uid &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
-             data.subject is string &&
-             data.completed is bool &&
-             data.type in ['assignment', 'classwork'] &&
-             (!('description' in data) || (data.description is string && data.description.size() < 2000));
+             data.subject is string && data.subject.size() < 100 &&
+             data.type in ['homework', 'test', 'extramural'] &&
+             data.completed is bool;
     }
 
     function isValidCheckIn(data) {
-      return data.keys().hasAll(['userId', 'mood', 'timestamp']) &&
-             data.userId == request.auth.uid &&
-             data.mood in ['Happy', 'Neutral', 'Sad', 'Anxious'] &&
-             data.timestamp is string;
+      return data.userId == request.auth.uid &&
+             data.mood in ['Happy', 'Stressed', 'Tired', 'Lonely', 'Motivated'] &&
+             (!('note' in data) || (data.note is string && data.note.size() < 500));
     }
 
-    function isValidAiChat(data) {
-      return data.keys().hasAll(['userId', 'question', 'answer', 'timestamp']) &&
-             data.userId == request.auth.uid &&
-             data.question is string && data.question.size() > 0 && data.question.size() < 1000 &&
-             data.answer is string && data.answer.size() > 0 && data.answer.size() < 5000;
+    function isValidPost(data) {
+      return data.userId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 50 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
+             data.category in ['encouragement', 'win', 'tip', 'question'] &&
+             data.likes is list;
     }
 
-    function isValidMessage(data) {
-      return data.keys().hasAll(['groupId', 'senderId', 'content', 'timestamp']) &&
-             data.senderId == request.auth.uid &&
-             data.content is string && data.content.size() > 0 && data.content.size() < 1000;
-    }
-
+    // ===============================================================
     // Rules
+    // ===============================================================
     
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -76,7 +75,7 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidTask(request.resource.data);
-      allow update: if isDocOwner() && isValidTask(request.resource.data);
+      allow update: if isDocOwner() && isValidTask(request.resource.data) && uidNotModified();
       allow delete: if isDocOwner();
     }
     
@@ -85,20 +84,16 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidCheckIn(request.resource.data);
     }
     
-    match /ai_chats/{chatId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && isValidAiChat(request.resource.data);
-    }
-    
-    match /chatGroups/{groupId} {
+    match /posts/{postId} {
       allow read: if isAuthenticated();
-      // Only mentors or admins should create groups in a real app, but for now allow authenticated
-      allow create: if isAuthenticated();
-      
-      match /messages/{messageId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isValidMessage(request.resource.data);
-      }
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // Owner can update everything
+        (isDocOwner() && isValidPost(request.resource.data) && uidNotModified()) ||
+        // Others can only update likes
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']))
+      );
+      allow delete: if isDocOwner() || isAdmin();
     }
   }
 }

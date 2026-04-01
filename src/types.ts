@@ -1,4 +1,6 @@
-export type Mood = 'Happy' | 'Neutral' | 'Sad' | 'Anxious';
+import { Timestamp } from 'firebase/firestore';
+
+export type Mood = 'Happy' | 'Neutral' | 'Sad' | 'Anxious' | 'Stressed' | 'Tired' | 'Lonely' | 'Motivated';
 
 export interface UserProfile {
   uid: string;
@@ -7,6 +9,19 @@ export interface UserProfile {
   photoURL: string | null;
   role: 'student' | 'mentor';
   createdAt: string;
+  onboarded?: boolean;
+  nickname?: string;
+  grade?: string;
+  strugglingSubjects?: string[];
+  studyGoals?: string[];
+  reminderTimes?: string[];
+  hasExtramural?: boolean;
+  supportPreferences?: string[];
+  streak?: {
+    current: number;
+    lastCompletedDate: string | null;
+    milestones: string[];
+  };
 }
 
 export interface Task {
@@ -15,40 +30,38 @@ export interface Task {
   title: string;
   subject: string;
   description?: string;
-  deadline: string;
+  dueDate: Timestamp;
   completed: boolean;
-  type: 'assignment' | 'classwork';
-  createdAt: string;
+  type: 'homework' | 'test' | 'extramural';
+  lessonTime?: string; // For extramural lessons
+  lessonDays?: string[]; // For extramural lessons
+  createdAt: Timestamp;
 }
 
 export interface CheckIn {
   id?: string;
   userId: string;
   mood: Mood;
-  timestamp: string;
+  timestamp: Timestamp;
+  note?: string;
 }
 
-export interface ChatMessage {
-  id?: string;
-  groupId: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  isAnonymous?: boolean;
-}
-
-export interface ChatGroup {
-  id?: string;
-  name: string;
-  description: string;
-  members: string[];
-}
-
-export interface AiChatMessage {
+export interface CommunityPost {
   id?: string;
   userId: string;
-  question: string;
-  answer: string;
-  timestamp: string;
+  authorName: string;
+  content: string;
+  category: 'win' | 'tip' | 'encouragement' | 'question';
+  likes: string[]; // Array of user UIDs
+  createdAt: Timestamp;
+}
+
+export interface SupportResource {
+  id: string;
+  title: string;
+  description: string;
+  category: 'stress' | 'study' | 'confidence' | 'help' | 'mental-health';
+  type: 'article' | 'video' | 'helpline';
+  url: string;
+  icon: string;
 }

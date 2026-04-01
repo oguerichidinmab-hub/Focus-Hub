@@ -9,26 +9,34 @@
         "displayName": { "type": "string" },
         "email": { "type": "string" },
         "photoURL": { "type": "string" },
-        "role": { "type": "string", "enum": ["student", "mentor"] },
+        "onboarded": { "type": "boolean" },
+        "nickname": { "type": "string" },
+        "grade": { "type": "string" },
+        "strugglingSubjects": { "type": "array", "items": { "type": "string" } },
+        "studyGoals": { "type": "array", "items": { "type": "string" } },
+        "reminderTimes": { "type": "array", "items": { "type": "string" } },
+        "hasExtramural": { "type": "boolean" },
+        "supportPreferences": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role"]
+      "required": ["uid", "email"]
     },
     "Task": {
       "title": "Task",
-      "description": "Homework or assignment task",
+      "description": "Homework, test, or extramural lesson",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "title": { "type": "string" },
         "subject": { "type": "string" },
-        "description": { "type": "string" },
-        "deadline": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["homework", "test", "extramural"] },
+        "dueDate": { "type": "string", "format": "date-time" },
         "completed": { "type": "boolean" },
-        "type": { "type": "string", "enum": ["assignment", "classwork"] },
+        "lessonTime": { "type": "string" },
+        "lessonDays": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "title", "subject", "deadline", "completed", "type"]
+      "required": ["userId", "title", "subject", "type", "completed"]
     },
     "CheckIn": {
       "title": "CheckIn",
@@ -36,47 +44,25 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "mood": { "type": "string", "enum": ["Happy", "Neutral", "Sad", "Anxious"] },
+        "mood": { "type": "string", "enum": ["Happy", "Stressed", "Tired", "Lonely", "Motivated"] },
+        "note": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "mood", "timestamp"]
     },
-    "AiChatMessage": {
-      "title": "AiChatMessage",
-      "description": "History of AI tutor interactions",
+    "CommunityPost": {
+      "title": "CommunityPost",
+      "description": "A post in the peer support community",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "question": { "type": "string" },
-        "answer": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "question", "answer", "timestamp"]
-    },
-    "ChatMessage": {
-      "title": "ChatMessage",
-      "description": "Message in a chat group",
-      "type": "object",
-      "properties": {
-        "groupId": { "type": "string" },
-        "senderId": { "type": "string" },
-        "senderName": { "type": "string" },
+        "authorName": { "type": "string" },
         "content": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "isAnonymous": { "boolean": "boolean" }
+        "category": { "type": "string", "enum": ["encouragement", "win", "tip", "question"] },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["groupId", "senderId", "content", "timestamp"]
-    },
-    "ChatGroup": {
-      "title": "ChatGroup",
-      "description": "Peer support or moderated group",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "members": { "type": "array", "items": { "type": "string" } }
-      },
-      "required": ["name"]
+      "required": ["userId", "authorName", "content", "category", "likes"]
     }
   },
   "firestore": {
@@ -86,23 +72,15 @@
     },
     "tasks/{taskId}": {
       "schema": "Task",
-      "description": "Homework tasks"
+      "description": "Student tasks and lessons"
     },
     "checkins/{checkinId}": {
       "schema": "CheckIn",
       "description": "Emotional check-ins"
     },
-    "chatGroups/{groupId}": {
-      "schema": "ChatGroup",
-      "description": "Chat groups"
-    },
-    "chatGroups/{groupId}/messages/{messageId}": {
-      "schema": "ChatMessage",
-      "description": "Messages within a group"
-    },
-    "ai_chats/{chatId}": {
-      "schema": "AiChatMessage",
-      "description": "AI tutor chat history"
+    "posts/{postId}": {
+      "schema": "CommunityPost",
+      "description": "Community posts"
     }
   }
 }
