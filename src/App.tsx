@@ -89,7 +89,6 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   setError: (error: string | null) => void;
-  login: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logout: () => void;
@@ -147,24 +146,6 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
-
-  const login = async () => {
-    const provider = new GoogleAuthProvider();
-    setError(null);
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        console.log('Login popup closed by user');
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        console.log('Popup request cancelled');
-      } else if (error.code === 'auth/unauthorized-domain') {
-        setError(`Login failed: This domain is not authorized in your Firebase Console.`);
-      } else {
-        setError(error.message || 'An unknown error occurred during Google login');
-      }
-    }
-  };
 
   const loginWithEmail = async (email: string, pass: string) => {
     setError(null);
@@ -232,10 +213,10 @@ export default function App() {
     try {
       const { sendPasswordResetEmail } = await import('firebase/auth');
       await sendPasswordResetEmail(auth, email);
-      alert('Password reset email sent! Please check your inbox.');
+      // Using sonner toast instead of alert
     } catch (error: any) {
       console.error('Reset error:', error);
-      alert(`Error: ${error.message || 'Could not send reset email'}`);
+      throw error; // Let the login page handle the error message
     }
   };
 
@@ -250,7 +231,7 @@ export default function App() {
   if (!user) {
     return (
       <ErrorBoundary>
-        <AuthContext.Provider value={{ user, profile, loading, error, setError, login, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
+        <AuthContext.Provider value={{ user, profile, loading, error, setError, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
           <Login />
         </AuthContext.Provider>
       </ErrorBoundary>
@@ -260,7 +241,7 @@ export default function App() {
   if (profile && !profile.onboarded) {
     return (
       <ErrorBoundary>
-        <AuthContext.Provider value={{ user, profile, loading, error, setError, login, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
+        <AuthContext.Provider value={{ user, profile, loading, error, setError, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
           <Onboarding onComplete={(updatedProfile) => setProfile(updatedProfile)} />
         </AuthContext.Provider>
       </ErrorBoundary>
@@ -297,7 +278,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AuthContext.Provider value={{ user, profile, loading, error, setError, login, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
+      <AuthContext.Provider value={{ user, profile, loading, error, setError, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
         <Toaster position="top-center" richColors />
         <Layout 
           activeTab={activeTab} 

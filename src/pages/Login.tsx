@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../App';
-import { LogIn, Mail, Lock, User as UserIcon, ArrowRight, RefreshCw } from 'lucide-react';
+import { LogIn, Mail, Lock, User as UserIcon, ArrowRight, RefreshCw, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 export default function Login() {
-  const { login, loginWithEmail, signUpWithEmail, resetPassword, error, setError } = useAuth();
-  const [isEmailLogin, setIsEmailLogin] = useState(false);
+  const { loginWithEmail, signUpWithEmail, resetPassword, error, setError } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +23,8 @@ export default function Login() {
     try {
       if (isForgotPassword) {
         await resetPassword(email);
-        setIsForgotPassword(false);
+        setResetSent(true);
+        toast.success('Password reset link sent to your email! ✨');
       } else if (isSignUp) {
         if (password !== confirmPassword) {
           setError('Passwords do not match');
@@ -32,22 +34,20 @@ export default function Login() {
       } else {
         await loginWithEmail(email, password);
       }
+    } catch (err: any) {
+      if (isForgotPassword) {
+        setError(err.message || 'Could not send reset email');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleView = (view: 'login' | 'signup' | 'forgot' | 'social') => {
+  const toggleView = (view: 'login' | 'signup' | 'forgot') => {
     setError(null);
-    if (view === 'social') {
-      setIsEmailLogin(false);
-      setIsForgotPassword(false);
-      setIsSignUp(false);
-    } else {
-      setIsSignUp(view === 'signup');
-      setIsForgotPassword(view === 'forgot');
-      setIsEmailLogin(true);
-    }
+    setResetSent(false);
+    setIsSignUp(view === 'signup');
+    setIsForgotPassword(view === 'forgot');
   };
 
   return (
@@ -77,190 +77,164 @@ export default function Login() {
         className="w-full space-y-6 relative z-10"
       >
         <AnimatePresence mode="wait">
-          {!isEmailLogin ? (
-            <motion.div
-              key="social"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 20, opacity: 0 }}
-              className="space-y-4"
-            >
+          <motion.div
+            key={isForgotPassword ? 'forgot' : isSignUp ? 'signup' : 'login'}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -20, opacity: 0 }}
+            className="bg-white/10 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/20 shadow-xl"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <h2 className="text-xl font-bold text-center mb-4">
+                {isForgotPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
+              </h2>
+
               {error && (
                 <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-rose-500/20 border border-rose-500/50 p-4 rounded-2xl text-xs text-rose-100 text-center"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-rose-500/20 border border-rose-500/50 p-3 rounded-xl text-[11px] text-rose-100 text-center"
                 >
                   {error}
                 </motion.div>
               )}
 
-              <button
-                onClick={login}
-                disabled={isLoading}
-                className="w-full bg-white text-indigo-600 font-semibold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 hover:bg-indigo-50 transition-all active:scale-[0.98] disabled:opacity-50"
-              >
-                <LogIn size={20} />
-                Continue with Google
-              </button>
+              {resetSent && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-emerald-500/20 border border-emerald-500/50 p-3 rounded-xl text-[11px] text-emerald-100 text-center"
+                >
+                  Reset link sent! Check your email.
+                </motion.div>
+              )}
               
-              <button
-                onClick={() => toggleView('login')}
-                disabled={isLoading}
-                className="w-full bg-indigo-500/30 text-white font-semibold py-4 rounded-2xl border border-white/20 flex items-center justify-center gap-3 hover:bg-indigo-500/40 transition-all active:scale-[0.98] disabled:opacity-50"
-              >
-                <Mail size={20} />
-                Continue with Email
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="email-form"
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -20, opacity: 0 }}
-              className="bg-white/10 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/20 shadow-xl"
-            >
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <h2 className="text-xl font-bold text-center mb-4">
-                  {isForgotPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
-                </h2>
-
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-rose-500/20 border border-rose-500/50 p-3 rounded-xl text-[11px] text-rose-100 text-center"
-                  >
-                    {error}
-                  </motion.div>
-                )}
-                
-                {isSignUp && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    className="relative"
-                  >
-                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
-                    <input
-                      type="text"
-                      placeholder="Full Name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
-                    />
-                  </motion.div>
-                )}
-
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
+              {isSignUp && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  className="relative"
+                >
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
                   <input
-                    type="email"
-                    placeholder="Email Address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="Full Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
                     className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
                   />
-                </div>
+                </motion.div>
+              )}
 
-                {!isForgotPassword && (
-                  <>
-                    <div className="relative">
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
+                />
+              </div>
+
+              {!isForgotPassword && (
+                <>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
+                    />
+                  </div>
+
+                  {isSignUp && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      className="relative"
+                    >
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
                       <input
                         type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Confirm Password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                         className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
                       />
-                    </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
 
-                    {isSignUp && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="relative"
-                      >
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" size={18} />
-                        <input
-                          type="password"
-                          placeholder="Confirm Password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                          className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm placeholder:text-indigo-200 focus:ring-2 focus:ring-white/50 outline-none transition-all"
-                        />
-                      </motion.div>
-                    )}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-white text-indigo-600 font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <RefreshCw className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    {isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Sign Up' : 'Sign In'}
+                    <ArrowRight size={18} />
                   </>
                 )}
+              </button>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-white text-indigo-600 font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="animate-spin" size={18} />
-                  ) : (
-                    <>
-                      {isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Sign Up' : 'Sign In'}
-                      <ArrowRight size={18} />
-                    </>
-                  )}
-                </button>
-
-                <div className="flex flex-col gap-3 pt-2">
-                  {!isForgotPassword ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => toggleView(isSignUp ? 'login' : 'signup')}
-                        className="text-xs text-indigo-100 hover:text-white transition-colors"
-                      >
-                        {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                      </button>
-                      {!isSignUp && (
-                        <button
-                          type="button"
-                          onClick={() => toggleView('forgot')}
-                          className="text-xs text-indigo-200/70 hover:text-indigo-100 transition-colors"
-                        >
-                          Forgot Password?
-                        </button>
-                      )}
-                    </>
-                  ) : (
+              <div className="flex flex-col gap-3 pt-2">
+                {!isForgotPassword ? (
+                  <>
                     <button
                       type="button"
-                      onClick={() => toggleView('login')}
+                      onClick={() => toggleView(isSignUp ? 'login' : 'signup')}
                       className="text-xs text-indigo-100 hover:text-white transition-colors"
                     >
-                      Back to Sign In
+                      {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
                     </button>
-                  )}
-                  
+                    {!isSignUp && (
+                      <button
+                        type="button"
+                        onClick={() => toggleView('forgot')}
+                        className="text-xs text-indigo-200/70 hover:text-indigo-100 transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </>
+                ) : (
                   <button
                     type="button"
-                    onClick={() => toggleView('social')}
-                    className="text-xs text-indigo-200/70 hover:text-indigo-100 transition-colors"
+                    onClick={() => toggleView('login')}
+                    className="text-xs text-indigo-100 hover:text-white transition-colors"
                   >
-                    Back to social login
+                    Back to Sign In
                   </button>
-                </div>
-              </form>
-            </motion.div>
-          )}
+                )}
+              </div>
+            </form>
+          </motion.div>
         </AnimatePresence>
         
-        <p className="text-center text-[10px] text-indigo-200 px-8">
-          By continuing, you agree to our terms of service and privacy policy.
-        </p>
+        <div className="space-y-4">
+          <p className="text-center text-[10px] text-indigo-200 px-8">
+            By continuing, you agree to our terms of service and privacy policy.
+          </p>
+          
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 text-indigo-200/60 text-[10px] font-bold uppercase tracking-widest">
+              <span>Made with</span>
+              <Heart size={10} className="text-rose-400 fill-rose-400" />
+              <span>by team FEMTEK</span>
+            </div>
+          </div>
+        </div>
       </motion.div>
 
       <div className="absolute bottom-12 text-indigo-200/50 text-[10px] uppercase tracking-[0.2em] z-10">
