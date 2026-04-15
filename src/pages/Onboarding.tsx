@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Check, Sparkles, Book, Target, Clock, Calendar, Heart } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from '../App';
-import { UserProfile } from '../types';
+import { ArrowRight, Check, Sparkles, Book, Target, Heart } from 'lucide-react';
 
 interface OnboardingProps {
-  onComplete: (profile: UserProfile) => void;
+  onComplete: (data: any) => void;
+  onLoginClick: () => void;
 }
 
-export default function Onboarding({ onComplete }: OnboardingProps) {
-  const { profile } = useAuth();
+export default function Onboarding({ onComplete, onLoginClick }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     nickname: '',
@@ -35,23 +31,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
-  const handleFinish = async () => {
-    if (!profile) return;
-    const updatedProfile: UserProfile = {
-      ...profile,
-      ...formData,
-      onboarded: true,
-    };
-
-    try {
-      await updateDoc(doc(db, 'users', profile.uid), {
-        ...formData,
-        onboarded: true,
-      });
-      onComplete(updatedProfile);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    }
+  const handleFinish = () => {
+    onComplete(formData);
   };
 
   const renderStep = () => {
@@ -238,23 +219,34 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </AnimatePresence>
       </div>
 
-      <div className="mt-12 flex gap-4">
-        {step > 1 && (
+      <div className="mt-12 flex flex-col gap-4">
+        <div className="flex gap-4">
+          {step > 1 && (
+            <button 
+              onClick={prevStep}
+              className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all"
+            >
+              Back
+            </button>
+          )}
           <button 
-            onClick={prevStep}
-            className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all"
+            onClick={step === 4 ? handleFinish : nextStep}
+            disabled={step === 1 && !formData.nickname}
+            className="flex-[2] bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            Back
+            {step === 4 ? 'Create Account' : 'Next'}
+            <ArrowRight size={20} />
+          </button>
+        </div>
+        
+        {step === 1 && (
+          <button 
+            onClick={onLoginClick}
+            className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors mt-4"
+          >
+            Already have an account? Log in
           </button>
         )}
-        <button 
-          onClick={step === 4 ? handleFinish : nextStep}
-          disabled={step === 1 && !formData.nickname}
-          className="flex-[2] bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {step === 4 ? 'Get Started' : 'Next'}
-          <ArrowRight size={20} />
-        </button>
       </div>
     </div>
   );

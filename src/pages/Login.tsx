@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../App';
-import { LogIn, Mail, Lock, User as UserIcon, ArrowRight, RefreshCw, Heart } from 'lucide-react';
+import { LogIn, Mail, Lock, User as UserIcon, ArrowRight, RefreshCw, Heart, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
-export default function Login() {
+interface LoginProps {
+  initialIsSignUp?: boolean;
+  onBackToOnboarding?: () => void;
+}
+
+export default function Login({ initialIsSignUp = false, onBackToOnboarding }: LoginProps) {
   const { loginWithEmail, signUpWithEmail, resetPassword, error, setError } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -62,8 +67,11 @@ export default function Login() {
         className="text-center mb-12 relative z-10"
       >
         <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/30">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-            <div className="w-6 h-6 bg-indigo-600 rounded-sm rotate-45" />
+          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner relative">
+            <BookOpen className="text-indigo-600" size={24} strokeWidth={2.5} />
+            <div className="absolute -bottom-1 -right-1 bg-rose-100 rounded-full p-1 shadow-sm">
+              <Heart className="text-rose-500 fill-rose-500" size={10} />
+            </div>
           </div>
         </div>
         <h1 className="text-4xl font-bold tracking-tight mb-2">Focus Hub</h1>
@@ -215,6 +223,16 @@ export default function Login() {
                     className="text-xs text-indigo-100 hover:text-white transition-colors"
                   >
                     Back to Sign In
+                  </button>
+                )}
+                
+                {onBackToOnboarding && !isForgotPassword && (
+                  <button
+                    type="button"
+                    onClick={onBackToOnboarding}
+                    className="text-xs text-indigo-200/70 hover:text-indigo-100 transition-colors mt-2"
+                  >
+                    Back to Onboarding
                   </button>
                 )}
               </div>

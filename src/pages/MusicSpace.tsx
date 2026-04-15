@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Music, 
@@ -20,6 +20,7 @@ interface Track {
   artist: string;
   duration: string;
   color: string;
+  url: string;
 }
 
 interface MusicSpaceProps {
@@ -30,19 +31,77 @@ export default function MusicSpace({ onBack }: MusicSpaceProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [ambientVolume, setAmbientVolume] = useState(50);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const tracks: Track[] = [
-    { id: '1', title: 'Deep Focus', artist: 'Lofi Study', duration: '3:45', color: 'bg-purple-500' },
-    { id: '2', title: 'Rainy Night', artist: 'Ambient Sounds', duration: '5:12', color: 'bg-blue-500' },
-    { id: '3', title: 'Morning Coffee', artist: 'Jazz Vibes', duration: '4:20', color: 'bg-orange-500' },
-    { id: '4', title: 'Forest Walk', artist: 'Nature Meditation', duration: '6:30', color: 'bg-emerald-500' },
+    { id: '1', title: 'Deep Focus', artist: 'Lofi Study', duration: '2:15', color: 'bg-purple-500', url: 'https://assets.mixkit.co/music/preview/mixkit-sleepy-cat-135.mp3' },
+    { id: '2', title: 'Ambient Vibes', artist: 'Electronic', duration: '2:45', color: 'bg-blue-500', url: 'https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3' },
+    { id: '3', title: 'Morning Coffee', artist: 'Jazz Vibes', duration: '2:20', color: 'bg-orange-500', url: 'https://assets.mixkit.co/music/preview/mixkit-chill-bro-89.mp3' },
+    { id: '4', title: 'Forest Walk', artist: 'Nature Meditation', duration: '3:10', color: 'bg-emerald-500', url: 'https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3' },
   ];
 
   const ambientSounds = [
-    { id: 'rain', icon: CloudRain, label: 'Rain', color: 'text-blue-500' },
-    { id: 'wind', icon: Wind, label: 'Wind', color: 'text-slate-400' },
-    { id: 'cafe', icon: Coffee, label: 'Cafe', color: 'text-amber-600' },
+    { id: 'rain', icon: CloudRain, label: 'Rain', color: 'text-blue-500', url: 'https://assets.mixkit.co/sfx/preview/mixkit-light-rain-loop-2393.mp3' },
+    { id: 'wind', icon: Wind, label: 'Wind', color: 'text-slate-400', url: 'https://assets.mixkit.co/sfx/preview/mixkit-tree-branches-in-the-wind-2461.mp3' },
+    { id: 'cafe', icon: Coffee, label: 'Cafe', color: 'text-amber-600', url: 'https://assets.mixkit.co/sfx/preview/mixkit-restaurant-crowd-talking-427.mp3' },
   ];
+
+  // Handle play/pause
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, currentTrack]);
+
+  // Handle volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = ambientVolume / 100;
+    }
+  }, [ambientVolume]);
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const current = audioRef.current.currentTime;
+      const duration = audioRef.current.duration;
+      if (duration > 0) {
+        setProgress((current / duration) * 100);
+      }
+    }
+  };
+
+  const handleTrackEnd = () => {
+    setIsPlaying(false);
+    setProgress(0);
+  };
+
+  const togglePlay = () => {
+    if (!currentTrack) {
+      setCurrentTrack(tracks[0]);
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const playNext = () => {
+    if (!currentTrack) return;
+    const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+    const nextIndex = (currentIndex + 1) % tracks.length;
+    setCurrentTrack(tracks[nextIndex]);
+    setIsPlaying(true);
+  };
+
+  const playPrev = () => {
+    if (!currentTrack) return;
+    const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+    const prevIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+    setCurrentTrack(tracks[prevIndex]);
+    setIsPlaying(true);
+  };
 
   return (
     <motion.div 
@@ -70,6 +129,14 @@ export default function MusicSpace({ onBack }: MusicSpaceProps) {
         <p className="text-slate-500">Relax, focus, and find your rhythm with curated sounds.</p>
       </header>
 
+      {/* Hidden Audio Element */}
+      <audio 
+        ref={audioRef} 
+        src={currentTrack?.url} 
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleTrackEnd}
+      />
+
       <div className="space-y-8">
         {/* Now Playing Card */}
         <section className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden">
@@ -91,28 +158,26 @@ export default function MusicSpace({ onBack }: MusicSpaceProps) {
               </div>
             </div>
 
-            {/* Progress Bar Placeholder */}
-            <div className="h-1.5 bg-white/10 rounded-full mb-8 overflow-hidden">
+            {/* Progress Bar */}
+            <div className="h-1.5 bg-white/10 rounded-full mb-8 overflow-hidden relative">
               <motion.div 
-                className="h-full bg-indigo-500"
-                initial={{ width: 0 }}
-                animate={{ width: isPlaying ? '45%' : '0%' }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute top-0 left-0 h-full bg-indigo-500"
+                style={{ width: `${progress}%` }}
               />
             </div>
 
             <div className="flex items-center justify-center gap-8">
-              <button className="text-white/50 hover:text-white transition-colors" aria-label="Previous track">
+              <button onClick={playPrev} className="text-white/50 hover:text-white transition-colors" aria-label="Previous track">
                 <SkipBack size={24} />
               </button>
               <button 
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={togglePlay}
                 className="w-16 h-16 bg-white text-slate-900 rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95"
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
               </button>
-              <button className="text-white/50 hover:text-white transition-colors" aria-label="Next track">
+              <button onClick={playNext} className="text-white/50 hover:text-white transition-colors" aria-label="Next track">
                 <SkipForward size={24} />
               </button>
             </div>
@@ -155,15 +220,29 @@ export default function MusicSpace({ onBack }: MusicSpaceProps) {
           <div className="grid grid-cols-3 gap-4">
             {ambientSounds.map((sound) => {
               const Icon = sound.icon;
+              const isSoundPlaying = currentTrack?.url === sound.url && isPlaying;
               return (
                 <button
                   key={sound.id}
-                  className="bg-white p-6 rounded-[32px] border border-slate-100 flex flex-col items-center gap-3 hover:bg-slate-50 transition-colors group"
+                  onClick={() => {
+                    setCurrentTrack({
+                      id: sound.id,
+                      title: sound.label,
+                      artist: 'Ambient Sound',
+                      duration: 'Loop',
+                      color: 'bg-slate-700',
+                      url: sound.url
+                    });
+                    setIsPlaying(true);
+                  }}
+                  className={`p-6 rounded-[32px] border flex flex-col items-center gap-3 transition-colors group ${
+                    isSoundPlaying ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 hover:bg-slate-50'
+                  }`}
                 >
-                  <div className={`p-3 rounded-2xl bg-slate-50 group-hover:scale-110 transition-transform ${sound.color}`}>
+                  <div className={`p-3 rounded-2xl transition-transform ${isSoundPlaying ? 'bg-indigo-100 scale-110' : 'bg-slate-50 group-hover:scale-110'} ${sound.color}`}>
                     <Icon size={24} />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{sound.label}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isSoundPlaying ? 'text-indigo-600' : 'text-slate-500'}`}>{sound.label}</span>
                 </button>
               );
             })}

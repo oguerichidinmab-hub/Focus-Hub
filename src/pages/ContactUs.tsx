@@ -57,22 +57,26 @@ export default function ContactUs({ onBack }: ContactUsProps) {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</p>
-                <p className="text-sm font-bold text-slate-800">support@focushub.app</p>
+                <p className="text-sm font-bold text-slate-800">officialnnennamary@gmail.com</p>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+                Upcoming
+              </div>
+              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center">
                 <Phone size={24} />
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Helpline</p>
-                <p className="text-sm font-bold text-slate-800">0800-FOCUS-HUB</p>
+                <p className="text-sm font-bold text-slate-400">Coming Soon</p>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/20 space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
+            <div className="space-y-2 pt-2">
               <label className="px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Your Name</label>
               <input 
                 required
@@ -107,7 +111,7 @@ export default function ContactUs({ onBack }: ContactUsProps) {
             </div>
             <button 
               type="submit"
-              className="w-full bg-indigo-600 text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all active:scale-95"
+              className="w-full bg-indigo-600 text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all active:scale-95"
             >
               <Send size={20} />
               Send Message

@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext, Component, Error
 import { AnimatePresence, motion } from 'motion/react';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 import Dashboard from './pages/Dashboard';
 import Planner from './pages/Planner';
@@ -19,6 +19,7 @@ import TermsPrivacy from './pages/TermsPrivacy';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 import ExamStress from './pages/articles/ExamStress';
 import Helpline from './pages/articles/Helpline';
 import StudyHabits from './pages/articles/StudyHabits';
@@ -111,6 +112,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [currentArticle, setCurrentArticle] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [splashTimeout, setSplashTimeout] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
+  const [onboardingData, setOnboardingData] = useState<any>(null);
+
+  useEffect(() => {
+    // Enforce a minimum splash screen duration of 2.5 seconds
+    const timer = setTimeout(() => {
+      setSplashTimeout(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -180,6 +192,8 @@ export default function App() {
         photoURL: null,
         role: 'student',
         createdAt: new Date().toISOString(),
+        ...(onboardingData || {}),
+        onboarded: !!onboardingData,
       };
       await setDoc(docRef, newProfile);
       setProfile(newProfile);
@@ -220,19 +234,29 @@ export default function App() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+  if (loading || splashTimeout) {
+    return <SplashScreen />;
   }
 
   if (!user) {
+    if (!showLogin) {
+      return (
+        <ErrorBoundary>
+          <Onboarding 
+            onComplete={(data) => {
+              setOnboardingData(data);
+              setShowLogin(true);
+            }} 
+            onLoginClick={() => setShowLogin(true)}
+          />
+        </ErrorBoundary>
+      );
+    }
+
     return (
       <ErrorBoundary>
         <AuthContext.Provider value={{ user, profile, loading, error, setError, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
-          <Login />
+          <Login initialIsSignUp={!!onboardingData} onBackToOnboarding={() => setShowLogin(false)} />
         </AuthContext.Provider>
       </ErrorBoundary>
     );
@@ -241,9 +265,20 @@ export default function App() {
   if (profile && !profile.onboarded) {
     return (
       <ErrorBoundary>
-        <AuthContext.Provider value={{ user, profile, loading, error, setError, loginWithEmail, signUpWithEmail, logout, resetPassword }}>
-          <Onboarding onComplete={(updatedProfile) => setProfile(updatedProfile)} />
-        </AuthContext.Provider>
+        <Onboarding 
+          onComplete={async (data) => {
+            try {
+              await updateDoc(doc(db, 'users', user.uid), {
+                ...data,
+                onboarded: true,
+              });
+              setProfile({ ...profile, ...data, onboarded: true });
+            } catch (err) {
+              console.error('Error saving onboarding data:', err);
+            }
+          }} 
+          onLoginClick={() => {}}
+        />
       </ErrorBoundary>
     );
   }

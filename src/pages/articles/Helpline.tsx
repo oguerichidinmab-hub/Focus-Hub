@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Phone, ShieldCheck, Heart, Users, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Phone, ShieldCheck, Heart, Users, MessageCircle, Clock } from 'lucide-react';
 
 interface ArticleProps {
   onBack: () => void;
@@ -22,13 +22,32 @@ export default function Helpline({ onBack }: ArticleProps) {
         Back to Support
       </button>
 
-      <div className="bg-rose-600 p-8 rounded-[2.5rem] text-white relative overflow-hidden">
-        <Phone className="absolute top-4 right-4 opacity-20" size={48} />
-        <h1 className="text-3xl font-bold leading-tight">Teen Helpline</h1>
-        <p className="mt-2 text-rose-100">You're never alone. We're here to help.</p>
+      <div className="bg-rose-600 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-xl shadow-rose-200">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[80px] rounded-full -mr-32 -mt-32" />
+        <Phone className="absolute top-6 right-6 opacity-20" size={64} />
+        <h1 className="text-3xl font-bold leading-tight relative z-10">Teen Helpline</h1>
+        <p className="mt-2 text-rose-100 relative z-10 font-medium">You're never alone. We're here to help.</p>
       </div>
 
       <div className="space-y-8 px-2">
+        <section className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+            Upcoming Feature
+          </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
+              <Phone size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Focus Hub Helpline</h2>
+              <p className="text-sm font-bold text-slate-400">Coming Soon</p>
+            </div>
+          </div>
+          <p className="text-slate-600 text-sm leading-relaxed">
+            We are working hard to bring you a dedicated 24/7 helpline where you can talk to trained professionals anonymously. Stay tuned for updates!
+          </p>
+        </section>
+
         <section className="space-y-3">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <ShieldCheck className="text-rose-600" size={24} />
