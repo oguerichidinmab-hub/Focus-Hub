@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../App';
+import AIAssistant from './AIAssistant';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -127,6 +128,9 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
           {children}
         </motion.div>
       </main>
+
+      {/* AI Assistant */}
+      <AIAssistant />
 
       {/* Bottom Navigation */}
       <nav 
